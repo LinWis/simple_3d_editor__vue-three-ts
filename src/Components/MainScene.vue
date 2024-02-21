@@ -2,7 +2,7 @@
     <div ref="container">
         <div ref="statsContainer"></div>
     </div>
-    <Sidebar :textures="textures" @changeObject="handleChange" @changeMesh="createModel" :selectedObject="selectedObjectMenu"/> 
+    <Sidebar @change-texture="handleChangeTexture" @delete-object="handleDeleteObject" @changePos="handleChangePos" @addObject="createModel" :textures="textures" :selectedObject="selectedObjectMenu"/> 
 </template>
 
 <script lang="ts">
@@ -14,6 +14,7 @@
     import Stats from 'three/examples/jsm/libs/stats.module.js';
     import Sidebar from './Sidebar.vue';
     import { TexturesContainer } from '../Interfaces/textures';
+    import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js';
 
     export default defineComponent({
         name: 'Cube',
@@ -25,26 +26,29 @@
                 renderer: new THREE.WebGLRenderer({ antialias: true, alpha: true }),
                 loader: new GLTFLoader(),
 
-                selectedObject: null as THREE.Mesh | null,
-                selectedObjectMenu: null as THREE.Mesh | null,
-                Meshes: [] as THREE.Mesh[],
-                transformControls: null as TransformControls | null,
-                stats: new Stats(),
-                controls: null as OrbitControls | null,
+                selectedObject: null as THREE.Mesh | null,  // Объект по которому мы нажали
+                selectedObjectMenu: null as THREE.Mesh | null, // Нужен для двустронней связи с дочерним компонентом
+                Meshes: [] as THREE.Mesh[],  // Массив всех объектов на сцене(кроме служебных)
+                transformControls: null as TransformControls | null, // Управление выделенным объектом
+                stats: new Stats(),  // Fps индикатор
+                controls: null as OrbitControls | null,  // Управление камерой
 
-                textures: null as TexturesContainer | null,
+                textures: null as TexturesContainer | null,  // Доступные текстур
+                ktx2Loader: null as KTX2Loader | null,
 
             }
         },
 
+        created() {
+            // Инициализируем KTX2Loader при создании компонента
+            this.initializeKTX2Loader();
+        },
+
         mounted() {
 
-            this.initTextures();
+            const ambientlight = new THREE.AmbientLight(0xffffff, 0.7);
+            this.scene.add(ambientlight);
 
-            const ambientlight = new THREE.AmbientLight(0xffffff, 0.5);
-            const spotLight = new THREE.SpotLight(0xffffff, 20);
-            const container = this.$refs.container as HTMLElement;
-            
             this.camera.position.y = 1;
             this.camera.position.z = 5;
 
@@ -55,30 +59,27 @@
             this.stats.dom.style.top = '30px';
             this.stats.dom.style.left = '30px';
 
-            let resizeCallback = () => {
-                this.renderer.setSize(window.innerWidth, window.innerHeight);
-                this.camera.aspect = window.innerWidth / window.innerHeight;
-                this.camera.updateProjectionMatrix();
-            }
-
-            window.addEventListener('resize', resizeCallback);
-
-            spotLight.position.set(0, 5, 5);
-            spotLight.target.position.set(0, 1, 0);
-            this.scene.add(spotLight);
-            this.scene.add(spotLight.target);
-            this.scene.add(ambientlight);
-
             const gridHelper = new THREE.GridHelper(100, 100);
             this.scene.add(gridHelper);
             
-            
-            let controls = new OrbitControls(this.camera, container);
-            controls.enableDamping = true;
-            this.controls = controls;
+            const container = this.$refs.container as HTMLElement;
 
             this.renderer.setSize(window.innerWidth, window.innerHeight);
             container.appendChild(this.renderer.domElement);
+
+            this.controls = new OrbitControls(this.camera, container);
+            this.controls.enableDamping = true;
+
+
+            document.addEventListener("mousedown", this.handleClick)
+            window.addEventListener('resize', () => {
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.camera.aspect = window.innerWidth / window.innerHeight;
+                this.camera.updateProjectionMatrix()
+            });
+            
+
+            this.initTextures();
 
             this.createModel("./Assets/cube.glb", "wood");
             if (this.controls) {
@@ -86,64 +87,101 @@
                 this.animate(this.scene, this.camera, this.renderer);
             }
 
-            document.addEventListener("mousedown", this.handleClick)
         },
         methods: {
+            initializeKTX2Loader() {
+                let THREE_PATH = `https://unpkg.com/three@0.${THREE.REVISION}.x`;
+
+                // Создаем и инициализируем KTX2Loader
+                this.ktx2Loader = new KTX2Loader()
+                    .setTranscoderPath(`${THREE_PATH}/examples/jsm/libs/basis/`)
+                    .detectSupport(this.renderer); // Если у вас есть this.renderer, вам нужно его передать
+
+                // Другие настройки KTX2Loader, если необходимо
+            },
+            // Здесь вроде как должна быть подгрузка текстур с бэка
             initTextures() {
                 this.textures = {
                     albedo: [
                         {
                             name: 'wood',
-                            url: '@/Assets/textures/albedo/albedo-wood.png',
+                            url: '/albedo/albedo-wood.png',
                         },
                         {
                             name: 'metal',
-                            url: '@/Assets/textures/albedo/albedo-metal.png',
+                            url: '/albedo/albedo-metal.png',
+                        },
+                        {
+                            name: 'leather',
+                            url: '/albedo/albedo-leather.ktx2',
+                        },
+                        {
+                            name: 'velours',
+                            url: '/albedo/albedo-velours.png',
                         },
                     ],
                     metalness: [
                         {
                             name: 'wood',
-                            url: '@/Assets/Textures/metalness/metalness-wood.png',
+                            url: '/metalness/metalness-wood.png',
                         },
                         {
                             name: 'metal',
-                            url: '@/Assets/Textures/metalness/metalness-wood.png',
+                            url: '/metalness/metalness-wood.png',
+                        },
+                        {
+                            name: 'leather',
+                            url: '/metalness/metalness-leather.ktx2',
+                        },
+                        {
+                            name: 'velours',
+                            url: '/metalness/metalness-velours.png',
                         },
                     ],
                     normal: [
                         {
                             name: 'wood',
-                            url: '@/Assets/Textures/normal/normal-wood.png',
+                            url: '/normal/normal-wood.png',
                         },
                         {
                             name:'metal',
-                            url: '@/Assets/Textures/normal/normal-metal.png',
+                            url: '/normal/normal-metal.png',
+                        },
+                        {
+                            name: 'leather',
+                            url: '/normal/normal-leather.ktx2',
+                        },
+                        {
+                            name: 'velours',
+                            url: '/normal/normal-velours.png',
                         },
                     ],
                     roughness: [
                         {
                             name: 'wood',
-                            url: '@/Assets/Textures/normal/roughness-wood.png',
+                            url: '/roughness/roughness-wood.png',
                         },
                         {
                             name:'metal',
-                            url: '@/Assets/Textures/normal/roughness-metal.png',
+                            url: '/roughness/roughness-metal.png',
+                        },
+                        {
+                            name: 'leather',
+                            url: '/roughness/roughness-leather.ktx2',
+                        },
+                        {
+                            name: 'velours',
+                            url: '/roughness/roughness-velours.png',
                         },
                     ],
                     sheen: [
                         {
                             name: 'velours',
-                            url: '@/Assets/Textures/sheen/sheen-velours.png',
+                            url: '/sheen/sheen-velours.png',
                         },
                     ]
                 }
-
-            },
-            menuClick(event: Event){
-                if (this.controls) this.controls.enabled = false;
-                    event.stopPropagation();
-            },    
+            }, 
             addTransformControls(controls: OrbitControls) {
                 this.transformControls = new TransformControls(this.camera, this.renderer.domElement);
                 this.scene.add(this.transformControls);
@@ -152,33 +190,61 @@
                     controls.enabled = !event.value;
                 });
 
+                // Для отображения изменений в дочернем компоненте
                 this.transformControls.addEventListener('objectChange', event => {
                     if (this.selectedObjectMenu && this.selectedObject) 
                         this.selectedObjectMenu.copy(this.selectedObject as THREE.Mesh)
                 });
 
             },
+            async getTexture(texturePath: string): Promise<THREE.MeshStandardMaterial> {
+                if (!texturePath) texturePath = "wood";
+
+                const textureLoader = new THREE.TextureLoader();
+
+                // Создаем промисы для загрузки текстур
+                const albedoPromise = new Promise<THREE.Texture>((resolve, reject) => {
+                    textureLoader.load('./Textures/albedo/albedo-' + texturePath + '.png', resolve, undefined, reject);
+                });
+
+                const roughnessPromise = new Promise<THREE.Texture>((resolve, reject) => {
+                    textureLoader.load('./Textures/roughness/roughness-' + texturePath + '.png', resolve, undefined, reject);
+                });
+
+                const metalnessPromise = new Promise<THREE.Texture>((resolve, reject) => {
+                    textureLoader.load('./Textures/metalness/metalness-' + texturePath + '.png', resolve, undefined, reject);
+                });
+
+                const normalPromise = new Promise<THREE.Texture>((resolve, reject) => {
+                    textureLoader.load('./Textures/normal/normal-' + texturePath + '.png', resolve, undefined, reject);
+                });
+
+                // Дожидаемся загрузки всех текстур
+                const [albedo, roughness, metalness, normal] = await Promise.all([albedoPromise, roughnessPromise, metalnessPromise, normalPromise]);
+
+                // Создаем материал и устанавливаем текстуры
+                const material = new THREE.MeshStandardMaterial({
+                    map: albedo,
+                    roughnessMap: roughness,
+                    metalnessMap: metalness,
+                    normalMap: normal,
+                });
+
+                return material;
+            },
             createModel(modelPath: string, texturePath: string) {
 
-                if (!texturePath) texturePath = "metal";
+                const loader: GLTFLoader = new GLTFLoader()
+                if (this.ktx2Loader) loader.setKTX2Loader(this.ktx2Loader.detectSupport(this.renderer));
 
-                const loader: GLTFLoader = new GLTFLoader();
-
-                loader.load(modelPath, (glb) => {
+                loader.load(modelPath, async (glb) => {
 
                     let loadedObject = glb.scene;
-
                     if (loadedObject) {
 
-                        const textureLoader = new THREE.TextureLoader();
+                        const material = await this.getTexture(texturePath);
 
-                        const material = new THREE.MeshStandardMaterial({
-                            map: textureLoader.load('./Textures/albedo/albedo-' + texturePath + '.png'), // текстура альбедо
-                            roughnessMap: textureLoader.load('./Textures/roughness/roughness-' + texturePath + '.png'), // текстура шероховатости
-                            metalnessMap: textureLoader.load('./Textures/metalness/metalness-' + texturePath + '.png'),
-                            normalMap: textureLoader.load('./Textures/normal/normal-' + texturePath + '.png')
-                        });
-
+                        // Проверяем что объект состоит из нескольких мэшей и объединяем их
                         if (loadedObject.children.length > 1) {
                             const meshGroup = new THREE.Group();
 
@@ -187,15 +253,24 @@
                                     const meshChild = child as THREE.Mesh;
                                     meshChild.material = material;
                                     meshGroup.add(meshChild);
+                                    this.Meshes.push(meshChild);
                                 }
                             });
+                            
                             this.scene.add(meshGroup);
                         }
                         else {
-                            let mesh = glb.scene.children[0] as THREE.Mesh;
-                            mesh.material = material;
-                            // if (this.transformControls)
-                            //     this.transformControls.attach(mesh);
+                            const mesh = glb.scene.children[0] as THREE.Mesh;
+
+                            mesh.material = new THREE.MeshStandardMaterial();
+                            const meshMaterial = mesh.material as THREE.MeshStandardMaterial;
+
+                            meshMaterial.map = material.map;
+                            meshMaterial.roughnessMap = material.roughnessMap;
+                            meshMaterial.metalnessMap = material.metalnessMap;
+                            meshMaterial.normalMap = material.normalMap;
+                            mesh.material = meshMaterial
+
 
                             this.scene.add(mesh);
                             this.Meshes.push(mesh);
@@ -227,7 +302,8 @@
                 animateFn();
 
             },
-            getIntersectedObject(clientX: number, clientY: number){
+            // Получаем объект по которому нажали, либо ничего
+            getIntersectedObject(clientX: number, clientY: number): THREE.Mesh | null {
                 let object: THREE.Mesh | null = null;
 
                 const raycaster = new THREE.Raycaster();
@@ -247,9 +323,8 @@
                 }
                 return object;
             },
+            // Нажатие по объекту
             handleClick(event: MouseEvent) {
-
-                // if (this.controls && !this.controls.enabled) this.controls.enabled =!this.controls.enabled;
 
                 let selectedObject = this.getIntersectedObject(event.clientX, event.clientY);
 
@@ -261,13 +336,61 @@
                     this.selectedObjectMenu.copy(selectedObject)
 
                 }
-            
 
             },
-            handleChange(object: THREE.Mesh) {
+            // Срабатывает если в дочернем классе изменили выделенный объект
+            handleChangePos(object: THREE.Mesh) {
                 if (this.selectedObject)
                     this.selectedObject.copy(object)
-            }  
+            },
+            handleDeleteObject() {
+                if (this.selectedObject) {
+                    if (this.transformControls)
+                        this.transformControls.detach();
+                    this.scene.remove(this.selectedObject);
+                    this.selectedObject = null;
+                    this.selectedObjectMenu = null;
+                }
+            },
+            handleChangeTexture(newTexture: {texturePath: string, textureType: string}) {
+                if (this.selectedObject && this.selectedObject.material) {
+
+                    let material =  this.selectedObject.material as THREE.MeshStandardMaterial;
+                    let texture = new THREE.Texture();
+
+                    if (newTexture.texturePath.endsWith('.ktx2') && this.ktx2Loader) {
+                        let ktx2Loader = toRaw(this.ktx2Loader);
+                        ktx2Loader.load('./Textures/' +  newTexture.texturePath, function ( texture ) {
+                            material = new THREE.MeshStandardMaterial( { map: texture } );
+                        });
+                    }
+                    else {
+                        texture = new THREE.TextureLoader().load('./Textures/' + newTexture.texturePath);
+                    }
+
+                    switch (newTexture.textureType) {
+                        case 'albedo':
+                            material.map = texture;
+                            break;
+                        case 'roughness':
+                            material.roughnessMap = texture;
+                            break;
+                        case 'metalness':
+                            material.metalnessMap = texture;
+                            break;
+                        case 'normal':
+                            material.normalMap = texture;
+                            break;
+                        case 'sheen':
+                            material.envMap = texture;
+                            material.envMapIntensity = 1;
+                            break;
+                        default:
+                            console.error('Unsupported texture type');
+                            break;
+                    }
+                }
+            }
         },
 
         components: {

@@ -1,12 +1,12 @@
 <template>
     <div class="sidebar" :style="{ top: position.top + 'px', right: position.right + 'px' }">
-        <Dropdown @changeMesh="changeMesh" /> 
-        <Objectmenu :textures="textures" @changeobj="handleChange" :selectedObject="selectedObject" />  
+        <Dropdown @addObject="handleAddObject" /> 
+        <Objectmenu @change-texture="handleChangeTexture" @delete-object="handleDeleteObject" @changePos="handleChangePos" :selectedObject="selectedObject" :textures="textures" />  
     </div>
 </template>
 
 <script lang="ts">
-    import { defineComponent } from 'vue';
+    import { PropType, defineComponent } from 'vue';
     import Dropdown from './Dropdown.vue';
     import Objectmenu from './Objectmenu.vue';
     import * as THREE from 'three';
@@ -21,25 +21,34 @@
     },
     props: {
         selectedObject: {
-            type:  Object as () => THREE.Mesh,
+            type: [Object, null] as PropType<THREE.Mesh | null>,
             required: true,
         },
         textures: {
-            type: Object as () => TexturesContainer,
-            required: true,
+            type: [Object, null] as PropType<TexturesContainer | null>,
+            required: true, 
         },
     },
     methods: {
-        changeMesh(mesh: string) {
-            console.log(mesh)
-            this.$emit('changeMesh', "./Assets/" + mesh + ".glb");
+        handleAddObject(mesh: string) {
+            this.$emit('addObject', "./Assets/" + mesh + ".glb");
         },
-        handleChange(newObject: THREE.Mesh) {
-            const obj = new THREE.Mesh
-            obj.copy(newObject);
+        handleChangePos(newObject: THREE.Mesh) {
 
-            this.$emit('changeObject', obj);
-        },  
+            this.$emit('changePos', ((new THREE.Mesh()).copy(newObject)));
+        },
+        handleDeleteObject() {
+            this.$emit('deleteObject');    
+        },
+        handleChangeTexture(newTexture: {texturePath: string, textureType: string}) {
+            this.$emit('changeTexture', newTexture);
+        }
+    },
+    emits: {
+        addObject: (mesh: string) => { return true },
+        changePos: (obj: THREE.Mesh) => { return true },
+        deleteObject: () => { return true },
+        changeTexture: (newTexture: {texturePath: string, textureType: string}) => { return true }
     },
 
     components: { Dropdown, Objectmenu },

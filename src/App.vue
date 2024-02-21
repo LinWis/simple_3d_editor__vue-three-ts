@@ -15,12 +15,13 @@
 </script>
 
 <style>
-  * {
+  *, ul, li{
     margin: 0;
     padding: 0;
+    margin-left: 0; 
+    padding-left: 0;
+     list-style: none;
   }
-
-  ul, li { margin-left: 0; padding-left: 0; list-style: none;}
 
   canvas {
     width: 100vw;

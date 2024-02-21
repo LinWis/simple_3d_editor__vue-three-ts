@@ -7,7 +7,7 @@
             <option value="helmet">Шлем</option>
         </select>
 
-        <button @click="changeMesh" id="mesh-add">Добавить</button>
+        <button @click="handleAddObject" id="mesh-add">Добавить</button>
     </div>
 </template>
   
@@ -17,10 +17,10 @@
     export default defineComponent({
         name: 'Dropdown',
         methods: {
-            changeMesh() {
+            handleAddObject() {
                 const html = document.getElementById('mesh-select') as HTMLSelectElement;
                 if (html.selectedIndex !== 0) {
-                    this.$emit('changeMesh', html.value);
+                    this.$emit('addObject', html.value);
                 }
             },
         }
