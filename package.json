@@ -7,8 +7,12 @@
     "build": "vue-cli-service build"
   },
   "dependencies": {
+    "@types/three": "^0.161.2",
     "core-js": "^3.8.3",
-    "vue": "^3.2.13",
+    "css-loader": "^6.10.0",
+    "style-loader": "^3.3.4",
+    "three": "^0.161.0",
+    "vue": "^3.4.19",
     "vue-router": "^4.0.3",
     "vuex": "^4.0.0"
   },
