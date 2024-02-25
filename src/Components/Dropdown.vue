@@ -1,13 +1,14 @@
 <template>
-    <div class="dropdown">
+    <div class="dropdown" :style="{ top: position.top + 'px', right: position.right + 'px' }">
         <select id="mesh-select">
-            <option>Выберите объект</option>
-            <option value="Cube">Куб</option>
-            <option value="Chair">Стул</option>
-            <option value="helmet">Шлем</option>
+            <option></option>
+            <option value="cube">Cube</option>
+            <option value="chair">chair</option>
+            <option value="helmet">helmet</option>
+            <option value="suzanne">suzanne</option>
         </select>
 
-        <button @click="handleAddObject" id="mesh-add">Добавить</button>
+        <button @click="handleAddObject" id="mesh-add">Add mesh</button>
     </div>
 </template>
   
@@ -16,6 +17,11 @@
 
     export default defineComponent({
         name: 'Dropdown',
+        data() {
+            return {
+                position: { top: 30, right: 100 }
+            }
+        },
         methods: {
             handleAddObject() {
                 const html = document.getElementById('mesh-select') as HTMLSelectElement;
@@ -28,9 +34,26 @@
 </script>
 
 <style scoped>
+
+    button {
+        width: 40%;
+        margin-left: 10px;
+    }
+    .dropdown {
+        position: absolute;
+        display: flex;
+        flex-direction: row;
+        background-color: gray;
+        max-width: 200px;
+        width: 100%;
+        padding: 5px;
+        border: 1px solid black;
+    }
     #mesh-select {
-        padding: 2px;
-        margin-right: 2px;
+        padding: 1px;
+        margin-right: 1px;
+        width: 60%;
+        text-align: center;
     }
     #mesh-add {
         padding: 2px;

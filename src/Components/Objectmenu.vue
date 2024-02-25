@@ -1,24 +1,32 @@
 <template>
-    <div class="object-menu" v-if="selectedObject !== null">
-        <h3 style="margin: 10px 0;">Selected Mesh</h3>
+    <div :style="{ top: position.top + 'px', right: position.right + 'px'}" class="object-menu" v-if="selectedObject !== null">
+        <h4>Selected Mesh</h4>
         <div class="object-menu__properties">
-            <div class="object-property__position">
-                <p>Position</p>
-                <input class="position-input" type="text" v-if="selectedObject !== null" @input="handleChangePos" v-model="selectedObject.position.x"/>
-                <input class="position-input" type="text" v-if="selectedObject !== null" @input="handleChangePos" v-model="selectedObject.position.y" />
-                <input class="position-input" type="text" v-if="selectedObject !== null" @input="handleChangePos" v-model="selectedObject.position.z" />
+            <div class="object-property__position"  v-if="selectedObject !== null">
+                <p class="position-lbl">Position</p>
+                <div class="position-inputs">
+                    <input class="position-input" type="text" @input="handleChangePos" v-model="selectedObject.position.x"/>
+                    <input class="position-input" type="text" @input="handleChangePos" v-model="selectedObject.position.y" />
+                    <input class="position-input" type="text" @input="handleChangePos" v-model="selectedObject.position.z" />
+                </div>
+                
             </div>
             <div class="object-property__texture">
 
                 <ul>
-                    <ol v-if="textures !== null" v-for="textureType in Object.keys(textures)">
+                    <ol  v-for="textureType in texturesTypes">
 
-                        <li>{{ textureType }}</li>
+                        <li class="texture__select-lbl">{{ textureType }}</li>
 
-                        <li>
-                            <select id="mesh-select">
+                        <li class="texture__select">
+                            <select id="mesh-select" v-if="textureType !== 'sheen'">
                                 <option></option>
-                                <option @click="handleTextureChange($event, textureType)" v-for="texture in textures[textureType]" :value="texture.url">{{ texture.name }}</option>
+                                <option v-for="textureValue in texturesValues" @click="handleTextureChange($event, textureType)" :value="textureValue" >{{ textureValue }}</option>
+                            </select>
+
+                            <select id="mesh-select" v-else>
+                                <option></option>
+                                <option @click="handleTextureChange($event, textureType)" :value="'velours'" >velours</option>
                             </select>
 
                         </li>
@@ -29,26 +37,28 @@
             </div>
         </div>
         <div class="delete-object">
-            <button @click="handleDeleteObject">Удалить</button>
+            <button @click="handleDeleteObject">Delete</button>
         </div>
     </div>
 </template>
 
 <script lang="ts">
-    import { TexturesContainer } from '@/Interfaces/textures';
-import * as THREE from 'three';
+    import * as THREE from 'three';
     import { PropType, defineComponent } from 'vue';
 
     export default defineComponent({
+        data(){
+            return {
+                position: { top: 85, right: 100 },
+                texturesTypes: ['albedo', 'normal', 'roughness', 'metalness', 'sheen'],
+                texturesValues: ['wood', 'metal', 'velours', 'leather']
+            }
+        },
         props: {
             selectedObject: {
                 type: [Object, null] as PropType<THREE.Mesh | null>,
                 required: true,
             },
-            textures: {
-                type: [Object, null] as PropType<TexturesContainer | null>,
-                required: true,
-            }
         },
         methods: {
             handleChangePos() {
@@ -60,40 +70,70 @@ import * as THREE from 'three';
                 this.$emit('deleteObject');
             },
             handleTextureChange(event: Event, textureType: string) {
-                const texturePath = (event.target as HTMLSelectElement).value
-                this.$emit('changeTexture', {texturePath, textureType});
+                let textureValue = (event.target as HTMLSelectElement).value
+
+                if (textureValue ==="leather") textureValue += '.ktx2'
+                else textureValue += '.png'
+               
+                this.$emit('changeTexture', {textureType, textureValue});
             }
         },
         emits: {
             changePos: (Obj: THREE.Mesh) => { return true },
             deleteObject: () => { return true },
-            changeTexture: (texture: {texturePath: string, textureType: string}) => { return true },
+            changeTexture: (texture: {textureType: string, textureValue: string}) => { return true },
         }
     })
 </script>
 
 <style scoped>
+    h4 {
+        margin-bottom: 10px;
+    }
     .object-menu {
+        position: absolute;
+        max-width: 200px;
+        width: 100%;
+        background-color: gray;
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        width: 200px;
+        padding: 5px;
+        border: 1px solid black;
     }
-
     .object-property__position {
         display: flex;
         flex-direction: row;
+        width: 100%;
         
     }
 
+    .position-lbl {
+        width: 40%;
+    }
+
+    .position-inputs {
+        width: 60%;
+        display: flex;
+        justify-content: space-between;
+    }
+
     .position-input {
-        width: 25%;
-        margin-left: 5px;
+        text-align: center;
+        width: 30%;
     }
 
     .object-property__texture {
         list-style: none;
+    }
+
+    .texture__select-lbl {
+        width: 40%;
+    }
+
+    .texture__select {
+        width: 60%;
     }
 
     ul {
@@ -104,6 +144,7 @@ import * as THREE from 'three';
     ol {
         display: flex;
         flex-direction: row;
+        margin-top: 5px;
     }
 
     li {
@@ -120,6 +161,7 @@ import * as THREE from 'three';
         width: 100%;
     }
     .delete-object button {
+        padding: 5px 0;
         width: 100%;
         margin-top: 10px;
     }

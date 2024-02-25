@@ -1,7 +1,7 @@
 <template>
     <div class="sidebar" :style="{ top: position.top + 'px', right: position.right + 'px' }">
         <Dropdown @addObject="handleAddObject" /> 
-        <Objectmenu @change-texture="handleChangeTexture" @delete-object="handleDeleteObject" @changePos="handleChangePos" :selectedObject="selectedObject" :textures="textures" />  
+        <Objectmenu @change-texture="handleChangeTexture" @delete-object="handleDeleteObject" @changePos="handleChangePos" :selectedObject="selectedObject" />  
     </div>
 </template>
 
@@ -10,8 +10,6 @@
     import Dropdown from './Dropdown.vue';
     import Objectmenu from './Objectmenu.vue';
     import * as THREE from 'three';
-
-    import { TexturesContainer } from '@/Interfaces/textures';
 
     export default defineComponent({
     data() {
@@ -24,14 +22,10 @@
             type: [Object, null] as PropType<THREE.Mesh | null>,
             required: true,
         },
-        textures: {
-            type: [Object, null] as PropType<TexturesContainer | null>,
-            required: true, 
-        },
     },
     methods: {
-        handleAddObject(mesh: string) {
-            this.$emit('addObject', "./Assets/" + mesh + ".glb");
+        handleAddObject(meshName: string) {
+            this.$emit('addObject', meshName);
         },
         handleChangePos(newObject: THREE.Mesh) {
 
@@ -40,15 +34,15 @@
         handleDeleteObject() {
             this.$emit('deleteObject');    
         },
-        handleChangeTexture(newTexture: {texturePath: string, textureType: string}) {
+        handleChangeTexture(newTexture: {textureType: string, textureValue: string}) {
             this.$emit('changeTexture', newTexture);
         }
     },
     emits: {
-        addObject: (mesh: string) => { return true },
+        addObject: (meshName: string) => { return true },
         changePos: (obj: THREE.Mesh) => { return true },
         deleteObject: () => { return true },
-        changeTexture: (newTexture: {texturePath: string, textureType: string}) => { return true }
+        changeTexture: (newTexture: {textureType: string, textureValue: string}) => { return true }
     },
 
     components: { Dropdown, Objectmenu },

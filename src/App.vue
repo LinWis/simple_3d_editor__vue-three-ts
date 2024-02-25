@@ -20,12 +20,20 @@
     padding: 0;
     margin-left: 0; 
     padding-left: 0;
-     list-style: none;
+    list-style: none;
+    box-sizing: content-box;
+    font-size: 13px;
   }
 
   canvas {
     width: 100vw;
     height: 100vh
+  }
+
+  input, select, button {
+    border-radius: 0%;
+    border: none;
+    font-size: 13px;
   }
 
 </style>
